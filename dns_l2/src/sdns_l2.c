@@ -93,6 +93,44 @@ static int extract_domain_name(char *str, char *name, int maxlen)
     return 0;
 }
 
+static int do_dns_intercept(const char *msg, int msg_len)
+{
+    S_DNS_HEADER_ST *dh = NULL;
+    union flags_un flags;
+    char resp[1024] = {0};
+    int resp_len = 0;
+    S_DNS_HEADER_ST *resp_dh;
+    S_DNS_RRS_ST *answer = NULL;
+
+    dh = (S_DNS_HEADER_ST *)msg;
+    flags.unit = ntohs(dh->flags.unit);
+
+    memcpy(resp, msg, msg_len);
+    resp_dh = (S_DNS_HEADER_ST *)resp;
+    flags.bits.qr = 1;
+    flags.bits.aa = 1;
+    flags.bits.ra = 1;
+    resp_dh->flags.unit = htons(flags.unit);
+    resp_len = msg_len;
+
+    /* answers count */
+    resp_dh->an_cnt = htons(1); 
+
+    answer = (S_DNS_RRS_ST *)((char *)resp_dh + msg_len);
+    answer->name = htons(0xC00C);
+    answer->type = htons(0x1);
+    answer->class = htons(0x1);
+    answer->ttl = htonl(0x0);
+    answer->len = htons(0x4);
+    answer->ip = str2ip("10.2.10.46");
+    resp_len += sizeof(S_DNS_RRS_ST);
+
+    UP_MSG_PRINTF("answer size : %d", sizeof(int));
+
+
+    return 0;
+}
+
 unsigned int sdns_skb_dns_intercept(const struct nf_hook_ops *ops, 
                                    struct sk_buff *skb,
                                    const struct net_device *in, 
@@ -158,6 +196,8 @@ unsigned int sdns_skb_dns_intercept(const struct nf_hook_ops *ops,
         UP_MSG_PRINTF("qr domain : [%s]", qr_domain);
 
     }
+
+    do_dns_intercept();
 
 
     return NF_ACCEPT;

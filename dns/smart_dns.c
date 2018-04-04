@@ -98,6 +98,45 @@ int send_dns_response(int dst_ip, short dst_port, char *resp, int resp_len)
     return 0;
 }
 
+static int do_dns_intercept(const char *msg, int msg_len, struct sockaddr_in *clt_addr)
+{
+    S_DNS_HEADER_ST *dh = NULL;
+    union flags_un flags;
+    char resp[1024] = {0};
+    int resp_len = 0;
+    S_DNS_HEADER_ST *resp_dh;
+    S_DNS_RRS_ST *answer = NULL;
+
+    dh = (S_DNS_HEADER_ST *)msg;
+    flags.unit = ntohs(dh->flags.unit);
+
+    memcpy(resp, msg, msg_len);
+    resp_dh = (S_DNS_HEADER_ST *)resp;
+    flags.bits.qr = 1;
+    flags.bits.aa = 1;
+    flags.bits.ra = 1;
+    resp_dh->flags.unit = htons(flags.unit);
+    resp_len = msg_len;
+
+    /* answers count */
+    resp_dh->an_cnt = htons(1); 
+
+    answer = (S_DNS_RRS_ST *)((char *)resp_dh + msg_len);
+    answer->name = htons(0xC00C);
+    answer->type = htons(0x1);
+    answer->class = htons(0x1);
+    answer->ttl = htonl(0x0);
+    answer->len = htons(0x4);
+    answer->ip = str2ip("10.2.10.46");
+    resp_len += sizeof(S_DNS_RRS_ST);
+
+    _LOG("answer size : %ld", sizeof(int));
+
+    send_dns_response(clt_addr->sin_addr.s_addr, clt_addr->sin_port, resp, resp_len);
+
+    return 0;
+}
+
 static int handle_msg(const char *msg, int msg_len, struct sockaddr_in *clt_addr)
 {
     S_DNS_HEADER_ST *dh = NULL;
@@ -125,32 +164,7 @@ static int handle_msg(const char *msg, int msg_len, struct sockaddr_in *clt_addr
     extract_domain_name((char *)(dh + 1), qr_domain, sizeof(qr_domain));
     _LOG("qr domain : [%s]", qr_domain);
 
-    char resp[1024] = {0};
-    int resp_len = 0;
-    S_DNS_HEADER_ST *resp_dh;
-    S_DNS_RRS_ST *answer = NULL;
-
-    memcpy(resp, msg, msg_len);
-    resp_dh = (S_DNS_HEADER_ST *)resp;
-    flags.bits.qr = 1;
-    flags.bits.aa = 1;
-    flags.bits.ra = 1;
-    resp_dh->flags.unit = htons(flags.unit);
-    resp_len = msg_len;
-    resp_dh->an_cnt = htons(1);
-
-    answer = (S_DNS_RRS_ST *)((char *)resp_dh + msg_len);
-    answer->name = htons(0xC00C);
-    answer->type = htons(0x1);
-    answer->class = htons(0x1);
-    answer->ttl = htonl(0x0);
-    answer->len = htons(0x4);
-    answer->ip = str2ip("10.2.10.46");
-    resp_len += sizeof(S_DNS_RRS_ST);
-
-    _LOG("answer size : %ld", sizeof(int));
-
-    send_dns_response(clt_addr->sin_addr.s_addr, clt_addr->sin_port, resp, resp_len);
+    do_dns_intercept(msg, msg_len, clt_addr);
 
     return 0;
 }

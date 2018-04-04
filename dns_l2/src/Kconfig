@@ -1,0 +1,5 @@
+config L2_SMART_DNS
+	tristate "L2 Smart DNS"
+	help
+	  This is a L2 Smart DNS module.
+

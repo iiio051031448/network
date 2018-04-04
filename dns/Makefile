@@ -1,6 +1,6 @@
 TARGET=sdns
 
-OBJS=smart_dns.o
+OBJS=smart_dns.o debug.o str.o
 
 CC=gcc
 

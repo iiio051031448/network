@@ -7,7 +7,8 @@
 
 #include <asm/io.h>                             
 #define UP_MSG_PRINTF(fmt, ...) \
-    printk("[%s][%d]\n", __func__, __LINE__); \
+    printk("[%s][%d]", __func__, __LINE__); \
     printk(fmt, ##__VA_ARGS__); \
+    printk("\n");
 
 #endif //__UP_H__

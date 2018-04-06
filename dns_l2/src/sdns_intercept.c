@@ -136,7 +136,6 @@ static int do_dns_intercept(struct sk_buff *skb,
     uh->check = uh->source;
     uh->source = uh->dest;
     uh->dest = uh->check;
-    uh->check = 0;
 
     /* swap dest and source ip addr */
     addr = ih->saddr;
@@ -145,13 +144,20 @@ static int do_dns_intercept(struct sk_buff *skb,
     ih->check = 0;
     ih->id = 0;
 
+    uh->check = 0; /* 必须先设置为0 */ //TODO:why?
+    uh->check = csum_tcpudp_magic(ih->saddr, ih->daddr, 
+                                  ntohs(uh->len), IPPROTO_UDP, 
+                                  csum_partial(uh, ntohs(uh->len), 0));
+    if (uh->check == 0) {
+        uh->check = CSUM_MANGLED_0;
+    }
+    UP_MSG_PRINTF("uh->check = %04X", uh->check);
+
     /* swap dest and source mac addr */
     memcpy(buf, eh->h_dest, ETH_ALEN);
     memcpy(eh->h_dest, eh->h_source, ETH_ALEN);
     memcpy(eh->h_source, buf,ETH_ALEN);
 
-    //TODO:udp checksum
-    
     /* ip header check */
     ip_send_check(ih);
     skb_push(skb, 14); //TODO: for what?

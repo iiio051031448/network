@@ -4,6 +4,28 @@
 #include <linux/kobject.h>
 #include <linux/list.h>
 
+void dump_data(unsigned char*buff, int count, const char *func, int line)
+{       
+    int i = 0;
+    if (NULL != func) {
+        printk("\n================================================\n");
+        printk("[%s][%d]\n", func, line);
+    }
+    for(i = 0; i < count; i++){
+        printk("%02X ", buff[i]);
+        if ((i + 1) != 1 && (i + 1) % 8 == 0) {
+            printk(" ");
+            if ((i + 1) != 1 && (i + 1) % 16 == 0) {
+                printk("\n");
+            }
+        }
+    }   
+    if (NULL != func) {
+        printk("\n");
+        printk("================================================\n");
+    }
+    return;
+}   
 
 char *ip2str(unsigned int ipv4, char *str_ip, unsigned int str_len)
 {

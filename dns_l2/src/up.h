@@ -4,6 +4,11 @@
 #define MAC_FMT "%02x:%02x:%02x:%02x:%02x:%02x"
 #define MAC2STR(m) (m)[0],(m)[1],(m)[2],(m)[3],(m)[4],(m)[5]
 
+void dump_data(unsigned char*buff, int count, const char *func, int line);
+#define __DUMP_DATA(d, n) \
+    do { \
+        dump_data((unsigned char *)d, n, __func__, __LINE__); \
+    } while(0)
 char *ip2str(unsigned int ipv4, char *str_ip, unsigned int str_len);
 unsigned int str2ip(const char *ipstr);
 

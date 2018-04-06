@@ -49,3 +49,6 @@ unsigned int str2ip(const char *ipstr)
     //return addr.sin_addr.s_addr;
     return 0x0A020A2E;
 }
+
+//EXPORT_SYMBOL(dump_data);
+//EXPORT_SYMBOL(str2ip);

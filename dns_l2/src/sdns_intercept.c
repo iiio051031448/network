@@ -129,7 +129,7 @@ static int do_dns_intercept(struct sk_buff *skb,
     answer->ip = str2ip("10.2.10.46");
 
     uh->len = htons(ntohs(uh->len) + sizeof(S_DNS_RRS_ST));
-    ih->tot_len = htons(ih->tot_len + sizeof(S_DNS_RRS_ST));
+    ih->tot_len = htons(ntohs(ih->tot_len) + sizeof(S_DNS_RRS_ST));
 
     /* swap dest and source port.
      * use uh->check as tmp var, so smart ! */
@@ -174,6 +174,7 @@ unsigned int sdns_skb_dns_intercept(const struct nf_hook_ops *ops,
 
 
 { 
+    int ret = NF_ACCEPT;
     struct ethhdr *eh = NULL;
     struct iphdr  *ih = NULL;
     struct udphdr *uh = NULL;
@@ -207,10 +208,10 @@ unsigned int sdns_skb_dns_intercept(const struct nf_hook_ops *ops,
     dport = ntohs(uh->dest);
     sport = ntohs(uh->source);
 
-    UP_MSG_PRINTF("dport : %d sport : %d\n", dport, sport);
     if (dport != 53 && sport != 53) {
         return NF_ACCEPT;
     }
+    UP_MSG_PRINTF("dport : %d sport : %d\n", dport, sport);
 
     dh = (S_DNS_HEADER_ST *)(uh + 1);
 
@@ -230,12 +231,10 @@ unsigned int sdns_skb_dns_intercept(const struct nf_hook_ops *ops,
         extract_domain_name((char *)(dh + 1), qr_domain, sizeof(qr_domain));
         UP_MSG_PRINTF("qr domain : [%s]", qr_domain);
 
-        do_dns_intercept(skb, eh, ih, uh, dh);
+        ret = do_dns_intercept(skb, eh, ih, uh, dh);
     }
 
-
-
-    return NF_ACCEPT;
+    return ret;
 }
 
 static struct nf_hook_ops sdns_hooks[] = {
